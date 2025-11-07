@@ -5,13 +5,14 @@ Install deps via pyproject; avoid global installs.
 Tests: run all `pytest -q`; single test `pytest tests/test_fib.py::test_fib0 -q`.
 Re-run last failing: `pytest --lf -q`.
 Lint/Format: use `ruff check .` then `ruff format .`; fix incrementally.
-Type checking: `mypy src`.
+Type checking: `mypy src/tdd_agents`.
 Import order: stdlib, third-party, local; no wildcard imports.
-File layout: code in `src/`, tests in `tests/`, agents under `src/agents/`.
+File layout: package code in `src/tdd_agents/`, tests in `tests/`, agents under `src/tdd_agents/agents/`.
 Naming: snake_case funcs/vars, PascalCase classes, UPPER_CASE constants.
 Functions ≤ ~30 lines; extract helpers early.
 Errors: raise explicit exceptions; never swallow; log via centralized logger (planned `src/logging.py`).
 TDD cycle: add failing test, minimal code, refactor; commit after green+refactor.
+Pre-commit: ensure `pytest -q` green, `ruff check .` clean (or staged fixes), and `mypy src/tdd_agents` passes before committing.
 JSON state builder: keep pure (no side effects except parameter-free timestamp generation).
 Side effects (IO/network) must be wrapped with confirmation step docstring describing purpose + minimal inputs.
 Avoid premature abstractions; prefer clear stubs with TODO comments (no leaving dead code).
