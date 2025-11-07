@@ -13,7 +13,8 @@ class RefactorerAgent(Agent):
 
             prompt = refactorer_prompt(state)
             generated = self.llm.generate(prompt)
-            refactored = generated.strip() or base_code
+            from tdd_agents.sanitize import sanitize_snippet
+            refactored = sanitize_snippet(generated) or base_code
             notes = "LLM suggested refactor or echoed original."
         else:
             refactored = base_code

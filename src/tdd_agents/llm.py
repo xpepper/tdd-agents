@@ -62,7 +62,7 @@ class OpenAIClient:
             kwargs["api_key"] = self.api_key
         if self.base_url:
             kwargs["base_url"] = self.base_url
-        self._client = ChatOpenAI(**kwargs)
+        self._client = ChatOpenAI(**kwargs)  # type: ignore[arg-type]
 
     def generate(self, prompt: str) -> str:
         resp = self._client.invoke(prompt)
@@ -96,6 +96,14 @@ def build_llm() -> Tuple[LLMClient, Dict[str, Any]]:
             "mode": "offline",
         }
 
+    # If running under pytest and no explicit override to use live, force NullLLM for determinism
+    if os.getenv("PYTEST_RUNNING") == "1" and not os.getenv("FORCE_LIVE_LLM"):
+        return NullLLM(), {
+            "provider": provider or "none",
+            "model": "null",
+            "base_url": base_url,
+            "mode": "offline",
+        }
     if api_key:
         try:
             client = OpenAIClient(model=model, api_key=api_key, base_url=base_url)

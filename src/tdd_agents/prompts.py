@@ -57,7 +57,7 @@ def tester_prompt(state: Dict[str, Any]) -> str:
         f"Kata description: {kata}\n"
         f"Previous cycles: {history_len}. If zero, start with simplest failing test.\n"
         f"Context:\n{context}\n"
-        "Return ONLY the test function code (no imports unless needed)."
+        "Rules: return ONLY raw code of a single test function starting with 'def test_'. No markdown fences, no explanations, minimal assertion.\n"
     )
 
 
@@ -65,8 +65,8 @@ def implementer_prompt(state: Dict[str, Any]) -> str:
     last_test = state.get("full_test_suite", "")
     context = _context_block(state)
     return (
-        "You are an implementation agent. Provide minimal code to make the latest failing test pass.\n"
-        "Return ONLY python code snippet (no explanations). If impossible yet, return a placeholder comment.\n"
+        "You are an implementation agent. Provide the minimal change to make the latest failing test pass.\n"
+        "Return ONLY raw python code (no fences, no commentary). Do not invent unrelated functions. If insufficient info, output a single TODO comment.\n"
         f"Latest test snippet:\n{last_test}\n"
         f"Context:\n{context}\n"
     )
@@ -77,7 +77,7 @@ def refactorer_prompt(state: Dict[str, Any]) -> str:
     context = _context_block(state)
     return (
         "You are a refactoring assistant. Suggest an improved version of the code without changing behavior.\n"
-        "Keep it small; return ONLY code. If no improvements, echo original.\n"
+        "Keep diff minimal; return ONLY raw code (no fences, no extra comments). If no safe improvement, echo original exactly.\n"
         f"Current code:\n{current_code}\n"
         f"Context:\n{context}\n"
     )

@@ -13,7 +13,8 @@ class TesterAgent(Agent):
 
             prompt = tester_prompt(state)
             generated = self.llm.generate(prompt)
-            code = generated.strip() or "def test_placeholder(): assert True"
+            from tdd_agents.sanitize import sanitize_snippet
+            code = sanitize_snippet(generated) or "def test_placeholder(): assert True"
         else:
             code = "def test_placeholder(): assert True"
         return {

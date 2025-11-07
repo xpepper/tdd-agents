@@ -12,7 +12,8 @@ class ImplementerAgent(Agent):
 
             prompt = implementer_prompt(state)
             generated = self.llm.generate(prompt)
-            updated = generated.strip() or "# implementation stub\n"
+            from tdd_agents.sanitize import sanitize_snippet
+            updated = sanitize_snippet(generated) or "# implementation stub\n"
         else:
             updated = "# implementation stub\n"
         return {
