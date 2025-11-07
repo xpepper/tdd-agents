@@ -7,8 +7,16 @@ from .base import Agent
 
 class TesterAgent(Agent):
     def act(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        # Placeholder minimal failing test generation stub
+        # If llm exists, could generate a test skeleton; keep stub deterministic for now
+        if self.llm:
+            from tdd_agents.prompts import tester_prompt
+
+            prompt = tester_prompt(state)
+            generated = self.llm.generate(prompt)
+            code = generated.strip() or "def test_placeholder(): assert True"
+        else:
+            code = "def test_placeholder(): assert True"
         return {
-            "test_code": "def test_placeholder(): assert True",
-            "test_description": "Placeholder test always passes (replace with failing test).",
+            "test_code": code,
+            "test_description": "Generated failing test candidate (may be corrected).",
         }

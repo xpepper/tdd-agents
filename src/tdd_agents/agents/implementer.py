@@ -7,7 +7,15 @@ from .base import Agent
 
 class ImplementerAgent(Agent):
     def act(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        if self.llm:
+            from tdd_agents.prompts import implementer_prompt
+
+            prompt = implementer_prompt(state)
+            generated = self.llm.generate(prompt)
+            updated = generated.strip() or "# implementation stub\n"
+        else:
+            updated = "# implementation stub\n"
         return {
-            "updated_code": "# implementation stub\n",
-            "implementation_notes": "No-op implementation; replace with minimal pass logic.",
+            "updated_code": updated,
+            "implementation_notes": "LLM proposed implementation stub.",
         }

@@ -1,7 +1,9 @@
 from tdd_agents.orchestrator import run_single_cycle
 
 
-def test_run_single_cycle_structure():
+def test_run_single_cycle_structure(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("LLM_PROVIDER", "none")
     result = run_single_cycle("python", "Kata description")
     assert result["language"] == "python"
     assert result["kata_description"] == "Kata description"

@@ -1,6 +1,7 @@
 """Validation and minimal self-correction hooks for agent outputs.
 All functions are pure: they take dict-like output and return (output, message).
 """
+
 from __future__ import annotations
 from typing import Dict, Tuple
 
@@ -9,12 +10,13 @@ def validate_tester(output: Dict[str, str]) -> Tuple[Dict[str, str], str]:
     code = output.get("test_code", "")
     # Self-correct: ensure test is initially failing to honor TDD.
     if "assert True" in code:
-        output["test_code"] = "def test_placeholder(): assert False, 'Replace with real failing test'"
+        output["test_code"] = (
+            "def test_placeholder(): assert False, 'Replace with real failing test'"
+        )
         msg = "Tester output corrected to a failing placeholder test."
     elif not code.strip():
         output["test_code"] = "def test_empty(): assert False"
-        msg = "Tester output generated default failing test."\
-            
+        msg = "Tester output generated default failing test."
     else:
         msg = "Tester output validated."
     return output, msg

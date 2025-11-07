@@ -7,7 +7,18 @@ from .base import Agent
 
 class RefactorerAgent(Agent):
     def act(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        base_code = state.get("final_code", "")
+        if self.llm:
+            from tdd_agents.prompts import refactorer_prompt
+
+            prompt = refactorer_prompt(state)
+            generated = self.llm.generate(prompt)
+            refactored = generated.strip() or base_code
+            notes = "LLM suggested refactor or echoed original."
+        else:
+            refactored = base_code
+            notes = "No refactor applied."
         return {
-            "refactored_code": state.get("final_code", ""),
-            "refactor_notes": "No refactor applied.",
+            "refactored_code": refactored,
+            "refactor_notes": notes,
         }

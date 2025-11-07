@@ -26,34 +26,49 @@ from .validation import (
 def run_single_cycle(language: str, kata_description: str) -> Any:
     state = initial_state(language, kata_description)
     from .llm import build_llm
-    llm = build_llm()
-    tester = TesterAgent("tester", llm=llm)
-    implementer = ImplementerAgent("implementer", llm=llm)
-    refactorer = RefactorerAgent("refactorer", llm=llm)
-    supervisor = SupervisorAgent("supervisor", llm=llm)
+    from .state import now_iso
+
+    llm_client, llm_info = build_llm()
+    state.system_log.append(
+        {"timestamp": now_iso(), "message": f"LLM provider selected: {llm_info}"}
+    )
+    tester = TesterAgent("tester", llm=llm_client)
+    implementer = ImplementerAgent("implementer", llm=llm_client)
+    refactorer = RefactorerAgent("refactorer", llm=llm_client)
+    supervisor = SupervisorAgent("supervisor", llm=llm_client)
 
     tester_raw = tester.act(state.to_dict())
     tester_out, tester_msg = validate_tester(tester_raw)
-    state.system_log.append({"timestamp": state.system_log[-1]["timestamp"], "message": tester_msg})
+    from .state import now_iso
+
+    state.system_log.append({"timestamp": now_iso(), "message": tester_msg})
 
     implementer_raw = implementer.act(state.to_dict())
     impl_out, impl_msg = validate_implementer(implementer_raw)
-    state.system_log.append({"timestamp": state.system_log[-1]["timestamp"], "message": impl_msg})
+    from .state import now_iso
+
+    state.system_log.append({"timestamp": now_iso(), "message": impl_msg})
 
     refactor_raw = refactorer.act(state.to_dict())
     refactor_out, refactor_msg = validate_refactorer(refactor_raw)
-    state.system_log.append({"timestamp": state.system_log[-1]["timestamp"], "message": refactor_msg})
+    from .state import now_iso
+
+    state.system_log.append({"timestamp": now_iso(), "message": refactor_msg})
 
     supervisor_raw = supervisor.act(state.to_dict())
     supervisor_out, supervisor_msg = validate_supervisor(supervisor_raw)
-    state.system_log.append({"timestamp": state.system_log[-1]["timestamp"], "message": supervisor_msg})
+    from .state import now_iso
+
+    state.system_log.append({"timestamp": now_iso(), "message": supervisor_msg})
 
     cycle = TDDCycle(
         cycle_number=1,
         tester_output=CycleTesterOutput(**tester_out),
         implementer_output=CycleImplementerOutput(**impl_out),
         refactorer_output=CycleRefactorerOutput(**refactor_out),
-        supervisor_output=CycleSupervisorOutput(status=supervisor_out.get("status", "")),
+        supervisor_output=CycleSupervisorOutput(
+            status=supervisor_out.get("status", "")
+        ),
     )
     append_cycle(state, cycle)
     state.final_code = refactor_out.get("refactored_code", "")

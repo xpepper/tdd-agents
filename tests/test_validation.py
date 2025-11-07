@@ -1,7 +1,9 @@
 from tdd_agents.orchestrator import run_single_cycle
 
 
-def test_validation_log_entries_present():
+def test_validation_log_entries_present(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.setenv("LLM_PROVIDER", "none")
     result = run_single_cycle("python", "Kata")
     log_messages = [entry["message"] for entry in result["system_log"]]
     assert any("Tester output" in m for m in log_messages)

@@ -7,16 +7,17 @@ agents decoupled from LangChain specifics.
 Purity: construction reads environment; generation performs remote call.
 Side-effect boundaries are documented.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol, Optional
+from typing import Protocol, Optional, Any, Dict, Tuple
 import os
 
 try:  # Optional import to keep tests passing without network/API keys
     from langchain_openai import ChatOpenAI
 except Exception:  # pragma: no cover
-    ChatOpenAI = None
+    ChatOpenAI = None  # type: ignore
 
 
 class LLMClient(Protocol):
@@ -58,7 +59,7 @@ class OpenAIClient:
             kwargs["api_key"] = self.api_key
         if self.base_url:
             kwargs["base_url"] = self.base_url
-        self._client = ChatOpenAI(**kwargs)
+        self._client = ChatOpenAI(**kwargs)  # type: ignore
 
     def generate(self, prompt: str) -> str:
         resp = self._client.invoke(prompt)
@@ -66,33 +67,47 @@ class OpenAIClient:
         return getattr(resp, "content", str(resp))
 
 
-def build_llm() -> LLMClient:
+def build_llm() -> Tuple[LLMClient, Dict[str, Any]]:
     """Factory selecting appropriate LLMClient.
 
-    Selection logic (in order):
-    1. If LLM_PROVIDER=none -> NullLLM
-    2. If OPENAI_API_KEY present OR ANTHROPIC_API_KEY present -> OpenAIClient
-       (Anthropic via OpenAI compatibility layer if provided similarly)
-    3. Else -> NullLLM
-
-    Environment variables consulted:
-    - LLM_PROVIDER: 'openai', 'anthropic', 'none' (optional)
-    - OPENAI_API_KEY / ANTHROPIC_API_KEY
-    - LLM_MODEL (default 'gpt-4o-mini')
-    - OPENAI_BASE_URL (override base URL for compat servers)
+    Returns (client, info_dict) where info_dict contains:
+    - provider: resolved provider string
+    - model: model name (or 'null')
+    - base_url: custom base URL if any
+    - mode: 'live' or 'offline'
     """
     provider = os.getenv("LLM_PROVIDER", "").lower()
-    if provider == "none":
-        return NullLLM()
-
     api_key = os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
     model = os.getenv("LLM_MODEL", "gpt-4o-mini")
     base_url = os.getenv("OPENAI_BASE_URL")
 
+    if provider == "none":
+        return NullLLM(), {
+            "provider": "none",
+            "model": "null",
+            "base_url": None,
+            "mode": "offline",
+        }
+
     if api_key:
         try:
-            return OpenAIClient(model=model, api_key=api_key, base_url=base_url)
+            client = OpenAIClient(model=model, api_key=api_key, base_url=base_url)
+            return client, {
+                "provider": provider or "openai",
+                "model": model,
+                "base_url": base_url,
+                "mode": "live",
+            }
         except Exception:
-            # Fall back silently to NullLLM to avoid breaking core cycle tests
-            return NullLLM()
-    return NullLLM()
+            return NullLLM(), {
+                "provider": provider or "openai",
+                "model": "null",
+                "base_url": base_url,
+                "mode": "offline",
+            }
+    return NullLLM(), {
+        "provider": provider or "none",
+        "model": "null",
+        "base_url": base_url,
+        "mode": "offline",
+    }
