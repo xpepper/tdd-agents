@@ -80,7 +80,11 @@ def build_llm() -> Tuple[LLMClient, Dict[str, Any]]:
     - mode: 'live' or 'offline'
     """
     provider = os.getenv("LLM_PROVIDER", "").lower()
-    api_key = os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+    api_key = (
+        os.getenv("LLM_API_KEY")
+        or os.getenv("OPENAI_API_KEY")
+        or os.getenv("ANTHROPIC_API_KEY")
+    )
     model = os.getenv("LLM_MODEL", "gpt-4o-mini")
     base_url = os.getenv("OPENAI_BASE_URL")
 

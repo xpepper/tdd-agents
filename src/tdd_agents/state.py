@@ -35,6 +35,7 @@ class CycleRefactorerOutput:
 @dataclass
 class CycleSupervisorOutput:
     status: str = ""
+    heuristic_reason: str = ""
     issues_identified: List[str] = field(default_factory=list)
     suggested_actions: List[str] = field(default_factory=list)
 
@@ -61,6 +62,7 @@ class SystemState:
     tdd_history: List[TDDCycle] = field(default_factory=list)
     final_code: str = ""
     full_test_suite: str = ""
+    code_diffs: List[str] = field(default_factory=list)
     system_log: List[Dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:

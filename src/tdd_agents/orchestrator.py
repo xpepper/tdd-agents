@@ -62,13 +62,34 @@ def _run_cycle(
         tester_output=CycleTesterOutput(**tester_out),
         implementer_output=CycleImplementerOutput(**impl_out),
         refactorer_output=CycleRefactorerOutput(**refactor_out),
-        supervisor_output=CycleSupervisorOutput(status=supervisor_out.get("status", "")),
+        supervisor_output=CycleSupervisorOutput(
+            status=supervisor_out.get("status", ""),
+            heuristic_reason=supervisor_out.get("heuristic_reason", ""),
+        ),
     )
     append_cycle(state, cycle)
 
     # Update aggregate code/test suite after each cycle
-    state.final_code = refactor_out.get("refactored_code", state.final_code)
-    state.full_test_suite = tester_out.get("test_code", state.full_test_suite)
+    prev_code = state.final_code
+    new_code_candidate = (
+        refactor_out.get("refactored_code")
+        or impl_out.get("updated_code")
+        or state.final_code
+    )
+    state.final_code = new_code_candidate
+    from tdd_agents.diff import unified_code_diff
+
+    diff = unified_code_diff(prev_code, state.final_code)
+    if diff:
+        state.code_diffs.append(diff)
+    new_test_snippet = tester_out.get("test_code", "")
+    if new_test_snippet:
+        existing = state.full_test_suite.strip()
+        if existing:
+            if new_test_snippet.strip() not in existing.split("\n\n"):
+                state.full_test_suite = existing + "\n\n" + new_test_snippet
+        else:
+            state.full_test_suite = new_test_snippet
 
     return supervisor_out.get("status", ""), {
         "tester": tester_out,

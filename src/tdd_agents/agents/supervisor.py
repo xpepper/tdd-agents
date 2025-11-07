@@ -40,10 +40,13 @@ class SupervisorAgent(Agent):
         cycles = len(history)
         heuristic_status = "continue"
 
+        heuristic_reason = "initial"
         if cycles >= 5:
             heuristic_status = "done"
+            heuristic_reason = "max_cycles"
         elif cycles >= 2 and _is_cycle_equal(history[-1], history[-2]):
             heuristic_status = "done"
+            heuristic_reason = "stagnation"
 
         llm_status = None
         if self.llm and heuristic_status != "done":  # only ask LLM if not already done
@@ -55,10 +58,15 @@ class SupervisorAgent(Agent):
                 llm_status = generated
 
         # Resolve final status precedence: heuristic 'done' wins; else llm suggestion or heuristic fallback
-        final_status = heuristic_status if heuristic_status == "done" else (llm_status or heuristic_status)
+        final_status = (
+            heuristic_status
+            if heuristic_status == "done"
+            else (llm_status or heuristic_status)
+        )
 
         return {
             "status": final_status,
+            "heuristic_reason": heuristic_reason,
             "issues_identified": [],
             "suggested_actions": [],
         }

@@ -49,4 +49,6 @@ def validate_supervisor(output: Dict[str, str]) -> Tuple[Dict[str, str], str]:
         msg = "Supervisor status defaulted."
     else:
         msg = "Supervisor output validated."
+    # ensure heuristic_reason key exists for schema stability
+    output.setdefault("heuristic_reason", "")
     return output, msg

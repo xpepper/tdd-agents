@@ -21,4 +21,6 @@ def test_supervisor_stagnation_detection(monkeypatch):
     if len(history) >= 2:
         # If stagnation triggered, status becomes 'done' by or before second identical repetition
         statuses = [c["supervisor_output"]["status"] for c in history]
-        assert "done" in statuses or len(history) > 2  # allow fallback if heuristic not applied
+        assert (
+            "done" in statuses or len(history) > 2
+        )  # allow fallback if heuristic not applied

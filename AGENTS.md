@@ -12,7 +12,7 @@ Naming: snake_case funcs/vars, PascalCase classes, UPPER_CASE constants.
 Functions ≤ ~30 lines; extract helpers early.
 Errors: raise explicit exceptions; never swallow; log via centralized logger (planned `src/logging.py`).
 TDD cycle: add failing test, minimal code, refactor; commit after green+refactor.
-Pre-commit: ensure `pytest -q` green, `ruff check .` clean (or staged fixes), and `mypy src/tdd_agents` passes before committing.
+Pre-commit: ensure `pytest -q` green, `ruff check .` clean (or staged fixes), `ruff format .` applied, and `mypy src/tdd_agents` passes before committing.
 JSON state builder: keep pure (no side effects except parameter-free timestamp generation).
 Side effects (IO/network) must be wrapped with confirmation step docstring describing purpose + minimal inputs.
 Avoid premature abstractions; prefer clear stubs with TODO comments (no leaving dead code).
