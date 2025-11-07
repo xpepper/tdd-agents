@@ -56,6 +56,8 @@ def _run_cycle(
     supervisor_raw = supervisor.act(state.to_dict())
     supervisor_out, supervisor_msg = validate_supervisor(supervisor_raw)
     state.system_log.append({"timestamp": now_iso(), "message": supervisor_msg})
+    if supervisor_out.get("heuristic_reason"):
+        state.system_log.append({"timestamp": now_iso(), "message": f"Supervisor heuristic_reason={supervisor_out.get('heuristic_reason')} status={supervisor_out.get('status')}"})
 
     cycle = TDDCycle(
         cycle_number=cycle_number,
