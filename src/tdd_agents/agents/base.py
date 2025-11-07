@@ -10,8 +10,9 @@ class Agent(ABC):
 
     name: str
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, llm: Any | None = None):
         self.name = name
+        self.llm = llm  # injected dependency (can be NullLLM)
 
     @abstractmethod
     def act(self, state: Dict[str, Any]) -> Dict[str, Any]:  # minimal for scaffolding

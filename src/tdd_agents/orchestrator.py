@@ -25,10 +25,12 @@ from .validation import (
 
 def run_single_cycle(language: str, kata_description: str) -> Any:
     state = initial_state(language, kata_description)
-    tester = TesterAgent("tester")
-    implementer = ImplementerAgent("implementer")
-    refactorer = RefactorerAgent("refactorer")
-    supervisor = SupervisorAgent("supervisor")
+    from .llm import build_llm
+    llm = build_llm()
+    tester = TesterAgent("tester", llm=llm)
+    implementer = ImplementerAgent("implementer", llm=llm)
+    refactorer = RefactorerAgent("refactorer", llm=llm)
+    supervisor = SupervisorAgent("supervisor", llm=llm)
 
     tester_raw = tester.act(state.to_dict())
     tester_out, tester_msg = validate_tester(tester_raw)
