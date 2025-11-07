@@ -13,6 +13,11 @@ The system accumulates test snippets, tracks code revisions, and stores per‑cy
 - Supervisor heuristic early stop (max cycles / stagnation) with `heuristic_reason` field
 - Accumulated test suite (unique snippets appended)
 - Per-cycle code diffs (`code_diffs`) via unified diff
+- Diff + heuristic context injected into all agent prompts
+- Optional streaming per-cycle progress (`--stream`)
+- Optional filesystem persistence of artifacts (`--out-dir`, snapshots)
+- Optional generated test execution each cycle (`--run-tests-each-cycle`)
+- Optional git commit per cycle (`--git-commit`)
 - Pluggable LLM provider abstraction with offline NullLLM fallback
 - CLI for running cycles from kata text or file
 - Validation layer normalizing agent outputs
@@ -51,6 +56,32 @@ tdd-agents run --language python --kata-file path/to/kata.txt --cycles 3
 ```
 
 Output: First line JSON describing final state; second line a summary message. Use `jq` for inspection:
+
+### Additional Flags (Streaming, Persistence, Git)
+- `--stream`: print `[cycle N]` progress lines (status, heuristic, diff count)
+- `--out-dir DIR`: persist current aggregate code/tests under `DIR/code/main.py` and `DIR/tests/generated_tests.py`
+- `--write-each-cycle`: with `--out-dir`, also write snapshots per cycle under `DIR/snapshots/cycle_<N>/`
+- `--run-tests-each-cycle`: execute generated tests in isolation each cycle (requires Python + pytest available)
+- `--git-commit`: stage and commit `--out-dir` each cycle (repo must be initialized)
+- `--git-prefix`: Conventional Commit prefix for cycle commits (default `feat`)
+
+### Artifact Directory Layout
+```
+out_dir/
+  code/
+    main.py                # latest aggregate code
+  tests/
+    generated_tests.py     # accumulated test snippets
+  snapshots/
+    cycle_1/
+      code.py
+      tests.py
+      diff.txt?            # present if a diff exists for that cycle
+      meta.json            # cycle metadata (status, heuristic)
+    cycle_2/
+      ...
+```
+
 ```bash
 tdd-agents run --language python --kata "X" | head -n1 | jq .tdd_history[-1].supervisor_output
 ```

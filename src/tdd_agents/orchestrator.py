@@ -57,7 +57,12 @@ def _run_cycle(
     supervisor_out, supervisor_msg = validate_supervisor(supervisor_raw)
     state.system_log.append({"timestamp": now_iso(), "message": supervisor_msg})
     if supervisor_out.get("heuristic_reason"):
-        state.system_log.append({"timestamp": now_iso(), "message": f"Supervisor heuristic_reason={supervisor_out.get('heuristic_reason')} status={supervisor_out.get('status')}"})
+        state.system_log.append(
+            {
+                "timestamp": now_iso(),
+                "message": f"Supervisor heuristic_reason={supervisor_out.get('heuristic_reason')} status={supervisor_out.get('status')}",
+            }
+        )
 
     cycle = TDDCycle(
         cycle_number=cycle_number,
@@ -120,6 +125,7 @@ def run_n_cycles(
     language: str,
     kata_description: str,
     max_cycles: int = 3,
+    on_cycle: Any | None = None,
 ) -> Any:
     """Run up to `max_cycles` TDD cycles, stopping early if supervisor says 'done'."""
     state = initial_state(language, kata_description)
@@ -136,6 +142,13 @@ def run_n_cycles(
         status, _outputs = _run_cycle(
             state, cycle_number, tester, implementer, refactorer, supervisor
         )
+        if on_cycle:
+            try:
+                on_cycle(state.to_dict(), cycle_number)
+            except Exception as e:  # keep orchestration resilient
+                state.system_log.append(
+                    {"timestamp": now_iso(), "message": f"on_cycle callback error: {e}"}
+                )
         if status == "done":  # early stop
             state.system_log.append(
                 {"timestamp": now_iso(), "message": "Supervisor signaled completion."}

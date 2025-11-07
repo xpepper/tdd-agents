@@ -35,3 +35,10 @@
 - Log supervisor heuristic reasons (stagnation vs max cycles)
 - Accumulate full test suite across cycles (append not overwrite)
 - Generate per-cycle code diffs for agent prompts
+- Add streaming progress output per cycle (DONE)
+- Add optional persistence of final_code/tests to filesystem (DONE)
+- Add git commit per cycle (optional flag) with diff context in message (DONE)
+- Future: truncate large diffs in prompts
+- Future: richer test execution reporting (timings, failures summary)
+- Future: configurable snapshot retention (keep last N)
+- Future: optional HTML report generation

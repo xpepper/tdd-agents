@@ -32,11 +32,17 @@ def test_prompts_include_latest_diff_and_heuristic(monkeypatch):
     # We conservatively search all prompts after the first four (cycle 1)
     cycle2_prompts = recorder.prompts[4:]
     assert cycle2_prompts, "No second cycle prompts captured"
-    assert any("--- prev" in p and "+++ current" in p for p in cycle2_prompts), "Unified diff markers not found in second cycle prompts"
+    assert any("--- prev" in p and "+++ current" in p for p in cycle2_prompts), (
+        "Unified diff markers not found in second cycle prompts"
+    )
 
     # Heuristic reason from first cycle should be included (expected 'initial')
-    assert any("heuristic_reason: initial" in p for p in cycle2_prompts), "Heuristic reason not injected into prompts"
+    assert any("heuristic_reason: initial" in p for p in cycle2_prompts), (
+        "Heuristic reason not injected into prompts"
+    )
 
     # System log should have at least one heuristic_reason entry
     log_messages = [e["message"] for e in result["system_log"]]
-    assert any("Supervisor heuristic_reason=" in m for m in log_messages), "Supervisor heuristic log entry missing"
+    assert any("Supervisor heuristic_reason=" in m for m in log_messages), (
+        "Supervisor heuristic log entry missing"
+    )
