@@ -1,5 +1,7 @@
 # Objective
 Develop a Python prototype for a multi-agent Test-Driven Development (TDD) tool using LangChain. The prototype should be generic, able to work with any programming language and kata, utilizing a user-supplied kata description and goal.
+For any of the agents we'll be using an LLM provider such as OpenAI or Anthropic via LangChain. It should be possible to use any LLM provider compatible with the OpenAI API standard.
+
 Begin with a concise checklist (3–7 conceptual bullet points) outlining the main components and sequencing steps you will follow. Keep these items conceptual rather than implementation-specific.
 
 # Core Agents
