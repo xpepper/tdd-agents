@@ -11,13 +11,16 @@ Side-effect boundaries are documented.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol, Optional, Any, Dict, Tuple
+from typing import Protocol, Optional, Any, Dict, Tuple, TYPE_CHECKING
 import os
 
-try:  # Optional import to keep tests passing without network/API keys
+if TYPE_CHECKING:  # pragma: no cover - type checking only
     from langchain_openai import ChatOpenAI
-except Exception:  # pragma: no cover
-    ChatOpenAI = None  # type: ignore
+else:  # runtime import guarded
+    try:  # Optional import to keep tests passing without network/API keys
+        from langchain_openai import ChatOpenAI  # type: ignore
+    except Exception:  # pragma: no cover
+        ChatOpenAI = None  # type: ignore
 
 
 class LLMClient(Protocol):
@@ -59,7 +62,7 @@ class OpenAIClient:
             kwargs["api_key"] = self.api_key
         if self.base_url:
             kwargs["base_url"] = self.base_url
-        self._client = ChatOpenAI(**kwargs)  # type: ignore
+        self._client = ChatOpenAI(**kwargs)  # type: ignore[arg-type]
 
     def generate(self, prompt: str) -> str:
         resp = self._client.invoke(prompt)
