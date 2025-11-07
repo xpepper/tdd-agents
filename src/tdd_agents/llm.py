@@ -62,7 +62,7 @@ class OpenAIClient:
             kwargs["api_key"] = self.api_key
         if self.base_url:
             kwargs["base_url"] = self.base_url
-        self._client = ChatOpenAI(**kwargs)  # type: ignore[arg-type]
+        self._client = ChatOpenAI(**kwargs)
 
     def generate(self, prompt: str) -> str:
         resp = self._client.invoke(prompt)

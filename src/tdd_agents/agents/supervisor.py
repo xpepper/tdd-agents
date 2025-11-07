@@ -1,19 +1,27 @@
-"""Supervisor agent with simple stagnation heuristic.
+"""Supervisor agent with stagnation + unrelated code heuristic.
 
 Determines whether to continue, adjust, or declare done based on recent
-cycle outputs. Pure analysis logic precedes optional LLM status suggestion.
-Heuristic:
+cycle outputs and simple semantic alignment checks.
+Heuristics:
 - If >=5 cycles -> done.
 - If last two consecutive cycles have identical tester, implementer and
   refactorer outputs -> potential stagnation; return 'done'.
-- If only first cycle -> continue.
+- If current test references function names absent from implementation/refactor
+  code -> 'adjust'.
 LLM may still override to 'adjust' if it suggests that status; 'done'
 from heuristic is final.
 """
 
 from __future__ import annotations
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Set
+import re
 from .base import Agent
+
+
+_FUNCTION_IGNORE = {
+    # common pytest / builtin names that appear as calls but shouldn't trigger function-missing
+    "assert", "range", "len", "print", "int", "str", "float", "list", "dict", "set",
+}
 
 
 def _extract_history(state: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -34,19 +42,77 @@ def _is_cycle_equal(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
     )
 
 
+def _extract_function_calls(test_code: str) -> Set[str]:
+    """Extract candidate function names referenced in the test code.
+
+    Simple regex-based scan for name followed by '(' excluding ignored names and test functions.
+    Pure function.
+    """
+    candidates: Set[str] = set()
+    for match in re.finditer(r"\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(", test_code):
+        name = match.group(1)
+        if name.startswith("test_") or name in _FUNCTION_IGNORE:
+            continue
+        candidates.add(name)
+    return candidates
+
+
+def _missing_function_defs(functions: Set[str], impl_code: str, ref_code: str) -> Set[str]:
+    """Return function names that are referenced but have no 'def name(' in impl/refactor code."""
+    missing: Set[str] = set()
+    combined = f"{impl_code}\n{ref_code}" if ref_code else impl_code
+    for fn in functions:
+        pattern = rf"def\s+{re.escape(fn)}\s*\("
+        if not re.search(pattern, combined):
+            missing.add(fn)
+    return missing
+
+
 class SupervisorAgent(Agent):
     def act(self, state: Dict[str, Any]) -> Dict[str, Any]:
         history = _extract_history(state)
         cycles = len(history)
         heuristic_status = "continue"
-
         heuristic_reason = "initial"
+        issues_identified: List[str] = []
+        suggested_actions: List[str] = []
+
+        # Existing stagnation / max cycles heuristics
         if cycles >= 5:
             heuristic_status = "done"
             heuristic_reason = "max_cycles"
         elif cycles >= 2 and _is_cycle_equal(history[-1], history[-2]):
             heuristic_status = "done"
             heuristic_reason = "stagnation"
+
+        # Unrelated / missing function heuristic (only if not already done)
+        if heuristic_status != "done":
+            tester_output = state.get("tester_output", {}) or {}
+            implementer_output = state.get("implementer_output", {}) or {}
+            refactorer_output = state.get("refactorer_output", {}) or {}
+            test_code = str(tester_output.get("test_code", ""))
+            impl_code = str(implementer_output.get("updated_code", ""))
+            ref_code = str(refactorer_output.get("refactored_code", ""))
+
+            referenced = _extract_function_calls(test_code)
+            if referenced:
+                missing = _missing_function_defs(referenced, impl_code, ref_code)
+                if missing:
+                    heuristic_status = "adjust"
+                    heuristic_reason = "missing_function"
+                    issues_identified.append(
+                        "Missing function definitions: " + ", ".join(sorted(missing))
+                    )
+                    for fn in sorted(missing):
+                        suggested_actions.append(f"Define function '{fn}' minimally to satisfy test.")
+                elif not impl_code.strip() or impl_code.strip().startswith("#"):
+                    # Implementation is still placeholder while test references functions
+                    heuristic_status = "adjust"
+                    heuristic_reason = "placeholder_implementation"
+                    issues_identified.append(
+                        "Implementation is placeholder while test references functions."
+                    )
+                    suggested_actions.append("Add minimal function implementations referenced by test.")
 
         llm_status = None
         if self.llm and heuristic_status != "done":  # only ask LLM if not already done
@@ -67,6 +133,6 @@ class SupervisorAgent(Agent):
         return {
             "status": final_status,
             "heuristic_reason": heuristic_reason,
-            "issues_identified": [],
-            "suggested_actions": [],
+            "issues_identified": issues_identified,
+            "suggested_actions": suggested_actions,
         }
