@@ -1,6 +1,7 @@
 """State management and JSON assembly for multi-agent TDD cycles.
 Pure functions only (except timestamp generation).
 """
+
 from __future__ import annotations
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
@@ -42,9 +43,15 @@ class CycleSupervisorOutput:
 class TDDCycle:
     cycle_number: int
     tester_output: CycleTesterOutput = field(default_factory=CycleTesterOutput)
-    implementer_output: CycleImplementerOutput = field(default_factory=CycleImplementerOutput)
-    refactorer_output: CycleRefactorerOutput = field(default_factory=CycleRefactorerOutput)
-    supervisor_output: CycleSupervisorOutput = field(default_factory=CycleSupervisorOutput)
+    implementer_output: CycleImplementerOutput = field(
+        default_factory=CycleImplementerOutput
+    )
+    refactorer_output: CycleRefactorerOutput = field(
+        default_factory=CycleRefactorerOutput
+    )
+    supervisor_output: CycleSupervisorOutput = field(
+        default_factory=CycleSupervisorOutput
+    )
 
 
 @dataclass
@@ -68,5 +75,7 @@ def initial_state(language: str, kata_description: str) -> SystemState:
 
 def append_cycle(state: SystemState, cycle: TDDCycle) -> SystemState:
     state.tdd_history.append(cycle)
-    state.system_log.append({"timestamp": now_iso(), "message": f"Cycle {cycle.cycle_number} appended."})
+    state.system_log.append(
+        {"timestamp": now_iso(), "message": f"Cycle {cycle.cycle_number} appended."}
+    )
     return state

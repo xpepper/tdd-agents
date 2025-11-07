@@ -1,7 +1,16 @@
 """Orchestrator loop stub for multi-agent TDD cycles."""
+
 from __future__ import annotations
 from typing import Any
-from .state import initial_state, append_cycle, TDDCycle, CycleTesterOutput, CycleImplementerOutput, CycleRefactorerOutput, CycleSupervisorOutput
+from .state import (
+    initial_state,
+    append_cycle,
+    TDDCycle,
+    CycleTesterOutput,
+    CycleImplementerOutput,
+    CycleRefactorerOutput,
+    CycleSupervisorOutput,
+)
 from .agents.tester import TesterAgent
 from .agents.implementer import ImplementerAgent
 from .agents.refactorer import RefactorerAgent

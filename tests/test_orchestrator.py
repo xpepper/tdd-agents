@@ -1,4 +1,4 @@
-from src.orchestrator import run_single_cycle
+from tdd_agents.orchestrator import run_single_cycle
 
 
 def test_run_single_cycle_structure():

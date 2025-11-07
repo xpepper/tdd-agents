@@ -1,4 +1,5 @@
 """Tester agent stub."""
+
 from __future__ import annotations
 from typing import Any, Dict
 from .base import Agent

@@ -1,4 +1,4 @@
-from src.state import initial_state, append_cycle, TDDCycle
+from tdd_agents.state import initial_state, append_cycle, TDDCycle
 
 
 def test_initial_state_has_required_keys():
