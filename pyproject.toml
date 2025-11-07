@@ -11,6 +11,9 @@ dependencies = [
     "pydantic>=2.0",
 ]
 
+[project.scripts]
+tdd-agents = "tdd_agents.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
