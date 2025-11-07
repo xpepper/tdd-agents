@@ -35,3 +35,15 @@ def test_rover_rotate_left_from_north():
     
     assert rover.heading == Heading.W
 ```
+
+```python
+def test_rover_rotate_left_from_north():
+    """Test that a rover rotates 90 degrees left from North to West"""
+    # This test should fail initially as there's no rover implementation yet
+    from mars_rover import Rover
+    
+    rover = Rover(x=1, y=2, heading='N')
+    rover.rotate_left()
+    
+    assert rover.heading == 'W'
+```
