@@ -1,0 +1,37 @@
+[project]
+name = "tdd-agents"
+version = "0.1.0"
+description = "Multi-agent TDD prototype"
+authors = [ { name = "xpepper" } ]
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "langchain>=0.2.0",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5.0",
+    "mypy>=1.8.0",
+]
+
+[tool.ruff]
+line-length = 88
+exclude = [".venv"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
