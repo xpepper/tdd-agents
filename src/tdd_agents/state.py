@@ -64,6 +64,8 @@ class SystemState:
     full_test_suite: str = ""
     code_diffs: List[str] = field(default_factory=list)
     system_log: List[Dict[str, Any]] = field(default_factory=list)
+    aborted: bool = False
+    abort_reason: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

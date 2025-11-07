@@ -18,7 +18,7 @@ if TYPE_CHECKING:  # pragma: no cover - type checking only
     from langchain_openai import ChatOpenAI
 else:  # runtime import guarded
     try:  # Optional import to keep tests passing without network/API keys
-        from langchain_openai import ChatOpenAI  # type: ignore
+        from langchain_openai import ChatOpenAI
     except Exception:  # pragma: no cover
         ChatOpenAI = None  # type: ignore
 

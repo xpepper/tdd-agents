@@ -14,8 +14,19 @@ class RefactorerAgent(Agent):
             prompt = refactorer_prompt(state)
             generated = self.llm.generate(prompt)
             from tdd_agents.sanitize import sanitize_snippet
-            refactored = sanitize_snippet(generated) or base_code
-            notes = "LLM suggested refactor or echoed original."
+            if generated.strip() == "[NULL_LLM_OUTPUT]":
+                refactored = base_code
+                notes = "No refactor (null LLM)."
+            else:
+                candidate = sanitize_snippet(generated)
+                import re
+                existing_fns = re.findall(r'^def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', base_code, flags=re.MULTILINE)
+                if existing_fns and not any(f"def {fn}" in candidate for fn in existing_fns):
+                    refactored = base_code
+                    notes = "Ignored LLM refactor lacking function defs"
+                else:
+                    refactored = candidate or base_code
+                    notes = "LLM suggested refactor or echoed original."
         else:
             refactored = base_code
             notes = "No refactor applied."

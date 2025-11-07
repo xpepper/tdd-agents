@@ -37,22 +37,92 @@ def _run_cycle(
     refactorer: RefactorerAgent,
     supervisor: SupervisorAgent,
 ) -> Tuple[str, Dict[str, Any]]:
-    """Execute a single cycle given existing agents and state.
+    """Execute a single cycle with runtime validation + retries.
 
     Returns (supervisor_status, last_outputs_dict_for_code_update).
+    Rollback semantics:
+    - Tester phase: syntax errors trigger single retry; failing assertion kept.
+    - Implementer/refactorer phases: require tests to pass; retries up to env limit.
+    - On exhaustion set state.aborted and do not append cycle.
     """
-    tester_raw = tester.act(state.to_dict())
-    tester_out, tester_msg = validate_tester(tester_raw)
-    state.system_log.append({"timestamp": now_iso(), "message": tester_msg})
+    import os
+    from tdd_agents.runtime_validation import compile_snippet, run_tests
 
-    implementer_raw = implementer.act(state.to_dict())
-    impl_out, impl_msg = validate_implementer(implementer_raw)
-    state.system_log.append({"timestamp": now_iso(), "message": impl_msg})
+    max_retries = int(os.getenv("TDD_AGENTS_MAX_RETRIES", "3"))
 
-    refactor_raw = refactorer.act(state.to_dict())
-    refactor_out, refactor_msg = validate_refactorer(refactor_raw)
-    state.system_log.append({"timestamp": now_iso(), "message": refactor_msg})
+    pre_cycle_code = state.final_code  # capture code before any changes this cycle
+    # Tester phase
+    tester_attempts = 0
+    while True:
+        tester_raw = tester.act(state.to_dict())
+        tester_out, tester_msg = validate_tester(tester_raw)
+        state.system_log.append({"timestamp": now_iso(), "message": tester_msg})
+        ok, comp_msg = compile_snippet(tester_out.get("test_code", ""))
+        if ok:
+            break
+        tester_attempts += 1
+        state.system_log.append({"timestamp": now_iso(), "message": f"Tester syntax error; rollback attempt {tester_attempts}: {comp_msg}"})
+        if tester_attempts >= max_retries:
+            state.aborted = True
+            state.abort_reason = f"tester_syntax_retry_exhausted: {comp_msg}"
+            return "aborted", {"tester": tester_out}
 
+    # Implementer phase with test run requirement (allow failing due to assertion until implementation stage?)
+    impl_attempts = 0
+    impl_out: Dict[str, Any] = {}
+    while True:
+        # Provide tester snippet to implementer for stub inference
+        augmented_state = state.to_dict()
+        new_test_snippet = tester_out.get("test_code", "")
+        combined_for_stubs = augmented_state.get("full_test_suite", "").strip()
+        if new_test_snippet and new_test_snippet.strip() not in combined_for_stubs.split("\n\n"):
+            combined_for_stubs = (combined_for_stubs + "\n\n" + new_test_snippet).strip() if combined_for_stubs else new_test_snippet
+        augmented_state["full_test_suite"] = combined_for_stubs
+        implementer_raw = implementer.act(augmented_state)
+        impl_out, impl_msg = validate_implementer(implementer_raw)
+        state.system_log.append({"timestamp": now_iso(), "message": impl_msg})
+        # Run tests combining candidate code with accumulated test suite + current tester snippet
+        combined_suite = state.full_test_suite.strip()
+        if new_test_snippet and new_test_snippet.strip() not in combined_suite.split("\n\n"):
+            combined_suite = (combined_suite + "\n\n" + new_test_snippet).strip() if combined_suite else new_test_snippet
+        passed, details = run_tests(impl_out.get("updated_code", ""), combined_suite)
+        state.system_log.append({"timestamp": now_iso(), "message": f"Implementer test run passed={passed}."})
+        if passed:
+            # Accept tester snippet into suite
+            state.full_test_suite = combined_suite
+            break
+        impl_attempts += 1
+        state.system_log.append({"timestamp": now_iso(), "message": f"Implementer failing tests attempt {impl_attempts}: {details.splitlines()[:1][0] if details else 'no details'}"})
+        if impl_attempts >= max_retries:
+            state.aborted = True
+            state.abort_reason = "implementer_retry_exhausted"
+            return "aborted", {"tester": tester_out, "implementer": impl_out}
+
+    # Persist implementer code as current baseline for refactorer reuse
+    state.final_code = impl_out.get("updated_code", state.final_code)
+
+    # Refactorer phase: must keep tests green
+    ref_attempts = 0
+    refactor_out: Dict[str, Any] = {}
+    while True:
+        refactor_raw = refactorer.act(state.to_dict())
+        refactor_out, refactor_msg = validate_refactorer(refactor_raw)
+        state.system_log.append({"timestamp": now_iso(), "message": refactor_msg})
+        candidate_code = refactor_out.get("refactored_code") or impl_out.get("updated_code")
+        state.system_log.append({"timestamp": now_iso(), "message": f"Refactorer candidate_code_len={len(candidate_code or '')}"})
+        passed, details = run_tests(candidate_code or impl_out.get("updated_code", ""), state.full_test_suite)
+        state.system_log.append({"timestamp": now_iso(), "message": f"Refactorer test run passed={passed}."})
+        if passed:
+            break
+        ref_attempts += 1
+        snippet = details.replace('\n',' ')[:300] if details else 'no details'
+        state.system_log.append({"timestamp": now_iso(), "message": f"Refactorer failing tests attempt {ref_attempts}: {snippet}"})
+        if ref_attempts >= max_retries:
+            state.aborted = True
+            state.abort_reason = "refactorer_retry_exhausted"
+            return "aborted", {"tester": tester_out, "implementer": impl_out, "refactorer": refactor_out}
+
+    # Supervisor phase only if not aborted
     supervisor_raw = supervisor.act(state.to_dict())
     supervisor_out, supervisor_msg = validate_supervisor(supervisor_raw)
     state.system_log.append({"timestamp": now_iso(), "message": supervisor_msg})
@@ -77,7 +147,7 @@ def _run_cycle(
     append_cycle(state, cycle)
 
     # Update aggregate code/test suite after each cycle
-    prev_code = state.final_code
+    prev_code = pre_cycle_code
     new_code_candidate = (
         refactor_out.get("refactored_code")
         or impl_out.get("updated_code")
@@ -89,14 +159,6 @@ def _run_cycle(
     diff = unified_code_diff(prev_code, state.final_code)
     if diff:
         state.code_diffs.append(diff)
-    new_test_snippet = tester_out.get("test_code", "")
-    if new_test_snippet:
-        existing = state.full_test_suite.strip()
-        if existing:
-            if new_test_snippet.strip() not in existing.split("\n\n"):
-                state.full_test_suite = existing + "\n\n" + new_test_snippet
-        else:
-            state.full_test_suite = new_test_snippet
 
     return supervisor_out.get("status", ""), {
         "tester": tester_out,
@@ -139,6 +201,8 @@ def run_n_cycles(
     supervisor = SupervisorAgent("supervisor", llm=llm_client)
 
     for cycle_number in range(1, max_cycles + 1):
+        if state.aborted:
+            break
         status, _outputs = _run_cycle(
             state, cycle_number, tester, implementer, refactorer, supervisor
         )
@@ -149,6 +213,11 @@ def run_n_cycles(
                 state.system_log.append(
                     {"timestamp": now_iso(), "message": f"on_cycle callback error: {e}"}
                 )
+        if state.aborted:
+            state.system_log.append(
+                {"timestamp": now_iso(), "message": f"Aborted: {state.abort_reason}"}
+            )
+            break
         if status == "done":  # early stop
             state.system_log.append(
                 {"timestamp": now_iso(), "message": "Supervisor signaled completion."}

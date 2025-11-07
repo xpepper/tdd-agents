@@ -16,5 +16,6 @@ def test_implementer_creates_stub_for_referenced_function():
     state = {"full_test_suite": test_code}
     agent = ImplementerAgent(name="implementer", llm=NullLLM())
     out = agent.act(state)
-    assert "def execute_commands" in out["updated_code"], "Stub for execute_commands should be created"
-    assert "NotImplementedError" in out["updated_code"]
+    assert "def execute_commands" in out["updated_code"], "Stub/implementation for execute_commands should be created"
+    # Should return the expected literal now for simple patterns
+    assert "return ['EXPECTED']" in out["updated_code"]
