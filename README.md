@@ -28,26 +28,31 @@ pip install -e .[dev]
 
 ## Running
 ### CLI
-Invoke via module or installed script.
+Invoke via installed script (preferred) or module. Installed entry point shortens commands and keeps intent clear.
 
-Single cycle:
+Single cycle (installed script):
+```bash
+tdd-agents run --language python --kata "Return zero always"
+```
+
+Module fallback:
 ```bash
 python -m tdd_agents.cli run --language python --kata "Return zero always"
 ```
 
-Multi-cycle (up to N cycles, early stop possible):
+Multi-cycle (heuristic may stop early; hard cap 5 effective cycles due to supervisor rule):
 ```bash
-python -m tdd_agents.cli run --language python --kata "Sum two numbers" --cycles 5
+tdd-agents run --language python --kata "Sum two numbers" --cycles 10  # supervisor stops at <=5
 ```
 
 From file:
 ```bash
-python -m tdd_agents.cli run --language python --kata-file path/to/kata.txt --cycles 3
+tdd-agents run --language python --kata-file path/to/kata.txt --cycles 3
 ```
 
 Output: First line JSON describing final state; second line a summary message. Use `jq` for inspection:
 ```bash
-python -m tdd_agents.cli run --language python --kata "X" | head -n1 | jq .tdd_history[-1].supervisor_output
+tdd-agents run --language python --kata "X" | head -n1 | jq .tdd_history[-1].supervisor_output
 ```
 
 ### Programmatic
@@ -127,6 +132,18 @@ mypy src/tdd_agents      # type checking
 ## Null / Offline Mode
 Set `LLM_PROVIDER=none` (or omit keys) to run deterministic stub behavior (NullLLM returns constant string). Useful for CI and reproducible tests.
 
+Safer secret handling:
+```bash
+export LLM_API_KEY="$(pass show llm/openai-key)"  # or source .env
+export LLM_PROVIDER=openai
+export LLM_MODEL=gpt-4o-mini
+```
+Then run:
+```bash
+tdd-agents run --language python --kata-file kata.txt --cycles 4
+```
+(Flags still override env when needed.)
+
 ## Example End-to-End
 ```bash
 export LLM_PROVIDER=none
@@ -134,8 +151,8 @@ python -m tdd_agents.cli run --language python --kata "Implement Fibonacci" --cy
 ```
 
 ## Caveats / Roadmap
-- Prompts currently minimal; future work may inject diffs and accumulation context directly.
-- Logging of supervisor heuristic_reason per cycle may be expanded.
+- Prompts now include latest unified diff + heuristic context; consider future truncation strategy for very large diffs.
+- Logging of supervisor heuristic_reason per cycle already present; could add richer metrics.
 - Refactorer improvements intentionally conservative to keep diffs readable.
 
 ## License
