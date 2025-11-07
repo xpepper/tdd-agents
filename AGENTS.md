@@ -17,4 +17,4 @@ Side effects (IO/network) must be wrapped with confirmation step docstring descr
 Avoid premature abstractions; prefer clear stubs with TODO comments (no leaving dead code).
 External tools limited to allowed LangChain integrations; explain necessity before adding.
 No Cursor/Copilot rules exist; if added later, summarize them here.
-Keep commits focused; avoid unrelated formatting; include AGENTS.md compliance in PR summary.
+Keep commits focused; avoid unrelated formatting; include AGENTS.md compliance in PR summary. Use Conventional Commits (feat:, fix:, docs:, chore:, refactor:, test:, ci:, perf:) for messages.
