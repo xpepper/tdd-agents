@@ -32,3 +32,6 @@
 - Prepare example Fibonacci run
 - Review for modularity & clarity
 - Polish README with usage
+- Log supervisor heuristic reasons (stagnation vs max cycles)
+- Accumulate full test suite across cycles (append not overwrite)
+- Generate per-cycle code diffs for agent prompts
