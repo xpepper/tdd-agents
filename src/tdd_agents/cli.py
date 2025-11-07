@@ -90,14 +90,17 @@ def cmd_run(
         # Optional test execution (isolated to persisted artifacts)
         if run_tests_each and out_dir:
             try:
-                import subprocess, sys, os as _os
+                import subprocess
+                import sys
+                import os as _os
 
                 tests_file = _os.path.join(out_dir, "tests", "generated_tests.py")
                 code_file = _os.path.join(out_dir, "code", "main.py")
                 if _os.path.isfile(tests_file) and _os.path.isfile(code_file):
                     # Create a temp package directory for running pytest without interfering with project tests
                     # Strategy: run pytest on a temp dir assembling these two files.
-                    import tempfile, shutil
+                    import tempfile
+                    import shutil
 
                     tmp_dir = tempfile.mkdtemp(prefix="tdd_agents_cycle_")
                     try:
@@ -140,7 +143,8 @@ def cmd_run(
         # Optional git commit (requires git repo)
         if git_commit and out_dir:
             try:
-                import subprocess, shlex
+                import subprocess
+                import shlex
 
                 # Stage only out_dir
                 subprocess.run(shlex.split(f"git add {out_dir}"), check=False)

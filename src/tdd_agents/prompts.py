@@ -20,6 +20,23 @@ def _last_heuristic(state: Dict[str, Any]) -> str:
     return str(sup.get("heuristic_reason", ""))
 
 
+def _truncate_diff(diff: str, max_lines: int = 80, head: int = 40, tail: int = 10) -> str:
+    """Truncate a unified diff if it exceeds `max_lines`.
+
+    Keeps the first `head` and last `tail` lines with an insertion marker showing
+    truncated line count. Pure function.
+    """
+    lines = diff.splitlines()
+    if len(lines) <= max_lines:
+        return diff
+    if head + tail >= max_lines:  # safeguard to avoid empty middle
+        head = max_lines // 2
+        tail = max_lines - head - 1
+    omitted = len(lines) - (head + tail)
+    truncated = lines[:head] + [f"...[truncated {omitted} diff lines]..."] + lines[-tail:]
+    return "\n".join(truncated)
+
+
 def _context_block(state: Dict[str, Any]) -> str:
     diff = _latest_diff(state)
     heuristic = _last_heuristic(state)
@@ -27,7 +44,7 @@ def _context_block(state: Dict[str, Any]) -> str:
     if heuristic:
         parts.append(f"heuristic_reason: {heuristic}")
     if diff:
-        parts.append("Latest unified diff:\n" + diff)
+        parts.append("Latest unified diff (possibly truncated):\n" + _truncate_diff(diff))
     return "\n".join(parts) if parts else "(no prior diff or heuristic context)"
 
 

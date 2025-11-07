@@ -33,7 +33,7 @@ def test_streaming_and_out_dir(monkeypatch):
         assert proc.returncode == 0
         # Streaming lines should include cycle markers
         streamed = proc.stdout.splitlines()
-        cycle_lines = [l for l in streamed if l.startswith("[cycle ")]
+        cycle_lines = [line for line in streamed if line.startswith("[cycle ")]
         assert len(cycle_lines) >= 2, (
             f"Expected at least 2 cycle lines, got: {cycle_lines}"
         )

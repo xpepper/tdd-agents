@@ -182,7 +182,7 @@ python -m tdd_agents.cli run --language python --kata "Implement Fibonacci" --cy
 ```
 
 ## Caveats / Roadmap
-- Prompts now include latest unified diff + heuristic context; consider future truncation strategy for very large diffs.
+- Prompts include latest unified diff + heuristic context (diffs truncated when large with clear marker).
 - Logging of supervisor heuristic_reason per cycle already present; could add richer metrics.
 - Refactorer improvements intentionally conservative to keep diffs readable.
 

@@ -36,7 +36,7 @@
 - Accumulate full test suite across cycles (append not overwrite)
 - Generate per-cycle code diffs for agent prompts
 
-- Future: truncate large diffs in prompts
+- Truncate large diffs in prompts
 - Future: richer test execution reporting (timings, failures summary)
 - Future: configurable snapshot retention (keep last N)
 - Future: optional HTML report generation
